@@ -8,8 +8,8 @@
 * Find homography matrix 
 
 ## Dependencies
-Python 3.7.4
-OpenCV 3.4.2.16
+* Python 3.7.4
+* OpenCV 3.4.2.16
 
 ## How to use
 

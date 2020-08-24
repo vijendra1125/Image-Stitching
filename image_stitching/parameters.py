@@ -1,6 +1,6 @@
 '''
 @brief: Paramters
-@suthor: Vijendra Singh
+@author: Vijendra Singh
 '''
 
 # if true, enable additional print and visulaization
