@@ -1,5 +1,5 @@
 '''
-@brief: 
+@brief:
 @author: Vijendra Singh
 '''
 
@@ -13,7 +13,7 @@ import parameters as params
 def FLANN_matcher(kp1, des1, kp2, des2):
     '''
     @brief: match descriptor vectors with a FLANN based matcher
-    @args[in]: 
+    @args[in]:
         des1: descriptor from image 1
         des1: descriptor from image 2
     @args[out]: good matches
@@ -23,25 +23,31 @@ def FLANN_matcher(kp1, des1, kp2, des2):
                                   params.FLANN_SEARCH_PARAMS)
     matches = flann.knnMatch(des1, des2, k=params.FLANN_K)
     # find good matches as per Lowe's ratio test (0.7)
+    # also find closest feature
     good_matches = []
+    best_match = (0, 0)
+    min_distance = 1
     for m, n in matches:
         if m.distance < 0.7*n.distance:
             good_matches.append(m)
+            if m.distance < min_distance:
+                best_match = (kp1[m.queryIdx].pt, kp2[m.trainIdx].pt)
+                min_distance = m.distance
     if len(good_matches) < params.MIN_MATCH_COUNT:
         print("Not enough matches are found - {}/{}".format(len(good_matches),
                                                             params.MIN_MATCH_COUNT))
-        return (None, None, None)
+        return (None, None, None, None)
     # find keypoints for good matches
     good_kp1 = np.float32(
         [kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     good_kp2 = np.float32(
         [kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    return (good_matches, good_kp1, good_kp2)
+    return (good_matches, good_kp1, good_kp2, best_match)
 
 
 def matches_visualization(image1, image2, kp1, kp2, good_matches, h_mat, matches_mask):
     '''
-    @brief: 
+    @brief:
     @args[in]:
     @args[out]:
     '''
@@ -65,7 +71,7 @@ def matches_visualization(image1, image2, kp1, kp2, good_matches, h_mat, matches
 
 def get_homography_matrix(image1, image2):
     '''
-    @brief: 
+    @brief:
     @args[in]:
     @args[out]:
     '''
@@ -80,7 +86,7 @@ def get_homography_matrix(image1, image2):
         sys.exit()
     kp1, des1 = detector.detectAndCompute(image1, None)
     kp2, des2 = detector.detectAndCompute(image2, None)
-    good_matches, good_kp1, good_kp2 = FLANN_matcher(kp1, des1, kp2, des2)
+    good_matches, good_kp1, good_kp2, bm = FLANN_matcher(kp1, des1, kp2, des2)
     if good_matches is None:
         return None
 
@@ -92,43 +98,49 @@ def get_homography_matrix(image1, image2):
     if params.TEST_BOOL:
         matches_visualization(image1.copy(), image2.copy(),
                               kp1, kp2, good_matches, h_mat, matches_mask)
-
-    return h_mat
+    return (h_mat, bm)
 
 
 def find_homography(images):
     '''
-    @brief: 
+    @brief:
     @args[in]:
     @args[out]:
     '''
     homography = []
     for i in range(len(images)):
         for j in range(i+1, len(images)):
-            h_mat = get_homography_matrix(images[i], images[j])
+            h_mat, bm = get_homography_matrix(images[i], images[j])
             if h_mat is not None:
-                homography.append([i, j, h_mat])
+                homography.append([i, j, h_mat, bm])
     if len(homography) == 0:
         return None
     return homography
 
 
-def stitch(images, H):
-    x_offset = -H[0, 2]
-    y_offset = -H[1, 2]
-    # x_offset = 0
-    # y_offset = 0
+def stitch(images, H, bm):
+    bm_kp1 = bm[0]
+    bm_kp2 = bm[1]
+    bm_kp1_temp = np.dot(H, (bm_kp1 + (1,)))
+    bm_kp1 = [x/bm_kp1_temp[2] for x in bm_kp1_temp]
+    x_delta = (bm_kp2[0] + images[0].shape[0]) - bm_kp1[0]
+    y_delta = bm_kp1[1] - bm_kp2[1]
+    print(x_delta, y_delta)
+    x_offset = x_delta
+    y_offset = y_delta
     T = np.array([[1, 0, x_offset],
                   [0, 1, y_offset],
                   [0, 0, 1]])
     print(T)
     print(H)
-    # H = np.dot(T, H)
+    H = np.dot(T, H)
     print(H)
 
     stitched_frame_size = tuple(2*x for x in images[0].shape)
     stitched = cv2.warpPerspective(images[0], H, stitched_frame_size)
-    stitched[0:images[1].shape[0], 0:images[1].shape[1]] = images[1]
+    # stitched[0:images[1].shape[0], 0:images[1].shape[1]] = images[1]
+    stitched[0:images[0].shape[0],
+             images[0].shape[1]:] = images[1]
     if params.TEST_BOOL:
         cv2.imshow('stitched', stitched)
         cv2.moveWindow('stitched', 100, 50)

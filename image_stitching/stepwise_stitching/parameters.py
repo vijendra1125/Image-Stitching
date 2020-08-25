@@ -5,7 +5,7 @@
 
 # if true, enable additional print and visulaization
 TEST_BOOL = True
-TEST_ID = 0
+TEST_ID = 'l2r'
 # factor by image should be downscaled before use
 DOWN_FACTOR = 6
 
