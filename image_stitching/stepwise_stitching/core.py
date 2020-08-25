@@ -133,5 +133,5 @@ def stitch(images, H):
         cv2.imshow('stitched', stitched)
         cv2.moveWindow('stitched', 100, 50)
         cv2.waitKey(0)
-        cv2.imwrite('output/stitched_{}.png'.format(params.TEST_ID), result)
+        cv2.imwrite('output/stitched_{}.png'.format(params.TEST_ID), stitched)
         cv2.destroyWindow('stitched')
