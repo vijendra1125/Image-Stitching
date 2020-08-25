@@ -22,7 +22,7 @@ def FLANN_matcher(kp1, des1, kp2, des2):
     flann = cv2.FlannBasedMatcher(params.FLANN_INDEX_PARAMS,
                                   params.FLANN_SEARCH_PARAMS)
     matches = flann.knnMatch(des1, des2, k=params.FLANN_K)
-    # find good matches as per Lowe's ratio test
+    # find good matches as per Lowe's ratio test (0.7)
     good_matches = []
     for m, n in matches:
         if m.distance < 0.7*n.distance:
@@ -31,7 +31,7 @@ def FLANN_matcher(kp1, des1, kp2, des2):
         print("Not enough matches are found - {}/{}".format(len(good_matches),
                                                             params.MIN_MATCH_COUNT))
         return (None, None, None)
-    # find kepoints for good matches
+    # find keypoints for good matches
     good_kp1 = np.float32(
         [kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     good_kp2 = np.float32(
@@ -57,7 +57,10 @@ def matches_visualization(image1, image2, kp1, kp2, good_matches, h_mat, matches
     image3 = cv2.drawMatches(image1, kp1, image2, kp2,
                              good_matches, None, **draw_params)
     cv2.imshow('matching feature visualization', image3)
+    cv2.moveWindow('matching feature visualization', 100, 50)
     cv2.waitKey(0)
+    cv2.imwrite('output/matching_{}.png'.format(params.TEST_ID), image3)
+    cv2.destroyWindow('matching feature visualization')
 
 
 def get_homography_matrix(image1, image2):
@@ -102,10 +105,33 @@ def find_homography(images):
     homography = []
     for i in range(len(images)):
         for j in range(i+1, len(images)):
-            if(i != j):
-                image1 = images[i]
-                image2 = images[j]
-                h_mat = get_homography_matrix(image1, image2)
-                if h_mat is not None:
-                    homography.append([i, j, h_mat])
+            h_mat = get_homography_matrix(images[i], images[j])
+            if h_mat is not None:
+                homography.append([i, j, h_mat])
+    if len(homography) == 0:
+        return None
     return homography
+
+
+def stitch(images, H):
+    x_offset = -H[0, 2]
+    y_offset = -H[1, 2]
+    # x_offset = 0
+    # y_offset = 0
+    T = np.array([[1, 0, x_offset],
+                  [0, 1, y_offset],
+                  [0, 0, 1]])
+    print(T)
+    print(H)
+    # H = np.dot(T, H)
+    print(H)
+
+    stitched_frame_size = tuple(2*x for x in images[0].shape)
+    stitched = cv2.warpPerspective(images[0], H, stitched_frame_size)
+    stitched[0:images[1].shape[0], 0:images[1].shape[1]] = images[1]
+    if params.TEST_BOOL:
+        cv2.imshow('stitched', stitched)
+        cv2.moveWindow('stitched', 100, 50)
+        cv2.waitKey(0)
+        cv2.imwrite('output/stitched_{}.png'.format(params.TEST_ID), result)
+        cv2.destroyWindow('stitched')
