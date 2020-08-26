@@ -2,10 +2,11 @@
 ## About
 
 ## Steps
-* Feature matching
-  * Feature extraction: SURF is better than SIFT. Since SIFT patent got expired in March 2020 whereas SUFR have ctive paptent. Program provides option to configure the algorithm you would like to use for extracting feature.
-  * FLANN is used for feature matching
+
+* Feature extraction: SURF is better than SIFT. Since SIFT patent got expired in March 2020 whereas SUFR have ctive paptent. Program provides option to configure the algorithm you would like to use for extracting feature.
+* Feature matching: FLANN is used for feature matching
 * Find homography matrix 
+* Warp the source image to destination using hompgraphy matrix and overlay destination image on top of it
 
 ## Dependencies
 * Python 3.7.4
