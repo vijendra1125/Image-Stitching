@@ -14,7 +14,7 @@ VIEW_COLS = 2
 
 # ---Feature matching---
 # feature matching algorithm, choose between 'sift' and 'surf'
-FEATURE_MATCHING_ALGORITHM = 'surf'
+FEATURE_MATCHING_ALGORITHM = 'sift'
 # -matching-
 # FLANN matcher parameters
 FLANN_INDEX_PARAMS = dict(algorithm=1, trees=5)

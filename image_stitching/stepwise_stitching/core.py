@@ -10,18 +10,14 @@ import sys
 import parameters as params
 
 
-def FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc):
+def FLANN_matcher(src_desc, dest_desc):
     '''
     @brief: match descriptor vectors with a FLANN based matcher
     @args[in]:
-        src_kp: keypoints from source image
-        dest_kp: keyppoints from destination image
         src_desc: descriptor from source image
         dest_desc: descriptor from destination image
     @args[out]:
         good_mathes: matches with descriptor distance below Lowe's ration
-        best_match: keypoints in soure  and destination image corresponding to
-                    best matches descriptor
     '''
     # match descriptor vectors
     flann = cv2.FlannBasedMatcher(params.FLANN_INDEX_PARAMS,
@@ -29,27 +25,15 @@ def FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc):
     matches = flann.knnMatch(src_desc, dest_desc, k=params.FLANN_K)
 
     # find good matches as per Lowe's ratio test (0.7)
-    # also find keypoints in soure  and destination image corresponding to
-    # best matches descriptor
     good_matches = []
-    best_match = (0, 0)
-    min_distance = matches[0][0].distance
     for m, n in matches:
         if m.distance < 0.7*n.distance:
             good_matches.append(m)
-            if m.distance < min_distance:
-                best_match = (src_kp[m.queryIdx].pt, dest_kp[m.trainIdx].pt)
-                min_distance = m.distance
     if len(good_matches) < params.MIN_MATCH_COUNT:
         print("Not enough matches are found - {}/{}".format
               (len(good_matches), params.MIN_MATCH_COUNT))
         return (None, None, None, None)
-    # find keypoints for good matches
-    good_src_kp = np.float32(
-        [src_kp[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    good_dest_kp = np.float32(
-        [dest_kp[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    return (good_matches, best_match, good_src_kp, good_dest_kp)
+    return good_matches
 
 
 def matches_visualization(src_image, dest_image, src_kp, dest_kp, good_matches,
@@ -106,11 +90,12 @@ def get_homography_matrix(src_image, dest_image, task_name):
         sys.exit()
     src_kp, src_desc = detector.detectAndCompute(src_image, None)
     dest_kp, dest_desc = detector.detectAndCompute(dest_image, None)
-    matcher_out = FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc)
-    good_matches = matcher_out[0]
-    best_match = matcher_out[1]
-    good_src_kp = matcher_out[2]
-    good_dest_kp = matcher_out[3]
+    good_matches = FLANN_matcher(src_desc, dest_desc)
+    # find keypoints for good matches
+    good_src_kp = np.float32(
+        [src_kp[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+    good_dest_kp = np.float32(
+        [dest_kp[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     if good_matches is None:
         return (None, None)
 
@@ -119,16 +104,26 @@ def get_homography_matrix(src_image, dest_image, task_name):
                                      cv2.RANSAC, 5.0)
     matches_mask = mask.ravel().tolist()
 
+    # find best match
+    id = matches_mask.index(1)
+    best_match = (tuple(good_src_kp[id][0]), tuple(good_dest_kp[id][0]))
+    min_dist = good_matches[id].distance
+    for idx, good_match in enumerate(good_matches):
+        if (good_match.distance < min_dist) and matches_mask[idx] == 1:
+            best_match = (tuple(good_src_kp[idx][0]),
+                          tuple(good_dest_kp[idx][0]))
+            min_dist = good_match.distance
+
     # matching feature vizualization
     if params.TEST_BOOL:
         matches_visualization(src_image.copy(), dest_image.copy(),
                               src_kp, dest_kp, good_matches,
                               h_mat, matches_mask, task_name)
-    print(best_match)
+
     return (h_mat, best_match)
 
 
-def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, dest_overlay=True):
+def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, task_name):
     '''
     @brief:
     @args[in]:
@@ -137,44 +132,64 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, dest_overl
     # find the coordinate of best match keypoint from source image in the warped source image
     warped_src_bm_kp_t = np.dot(H, (src_bm_kp + (1,)))
     warped_src_bm_kp = [x/warped_src_bm_kp_t[2] for x in warped_src_bm_kp_t]
+
     # calculate offset based on the warping direction
     if direction == 'r2l':
         stitched_frame_size = (2 * src_image.shape[1], src_image.shape[0])
-        x_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
-        y_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
+        x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
+        y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
     elif direction == 'l2r':
         stitched_frame_size = (2*src_image.shape[1], src_image.shape[0])
-        x_offset = dest_bm_kp[0] + src_image.shape[0] - warped_src_bm_kp[0]
+        x_offset = dest_bm_kp[0] + src_image.shape[1] - warped_src_bm_kp[0]
         y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
     elif direction == 't2b':
         stitched_frame_size = (src_image.shape[1], 2*src_image.shape[0])
-        x_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
-        y_offset = dest_bm_kp[0] + src_image.shape[0] - warped_src_bm_kp[0]
+        x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
+        y_offset = dest_bm_kp[1] + src_image.shape[0] - warped_src_bm_kp[1]
+    elif direction == 'b2t':
+        stitched_frame_size = (src_image.shape[1], 2*src_image.shape[0])
+        x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
+        y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
+    else:
+        print('[ERROR]: Didnt find correct direction for warping task with \
+        task name {}'.format(task_name))
+        sys.exit()
+
     # caculate new homography matrix with offset compensation
     T = np.array([[1, 0, x_offset],
                   [0, 1, y_offset],
                   [0, 0, 1]])
-    # print(T)
-    # print(H)
     H = np.dot(T, H)
-    # print(H)
+
     # warp the source image
     stitched = cv2.warpPerspective(src_image, H, stitched_frame_size)
     # overlay destination image on warped output
-    if dest_overlay:
+    if True:
         if direction == 'r2l':
-            stitched[0:dest_image.shape[0], 0:dest_image.shape[1]] = dest_image
+            # stitched[0:dest_image.shape[0], 0:dest_image.shape[1]] = dest_image
+            for i in range(0, dest_image.shape[0]):
+                for j in range(0, dest_image.shape[1]):
+                    if stitched[i, j] == 0:
+                        stitched[i, j] = dest_image[i, j]
         elif direction == 'l2r':
-            stitched[0:dest_image.shape[0], dest_image.shape[1]:] = dest_image
-        if direction == 't2b':
-            stitched[dest_image.shape[0]:, 0:dest_image.shape[1]] = dest_image
-            # for i in range(dest_image.shape[0], dest_image.shape[0]*2):
-            #     for j in range(dest_image.shape[1]):
-            #         if stitched[i, j] == 0:
-            #             stitched[i, j] = dest_image[i - dest_image.shape[0], j]
-    # resize the final stitiched image and show
-    stitched = cv2.resize(stitched, (504, 504))
-    print(stitched.shape)
+            # stitched[0:dest_image.shape[0], dest_image.shape[1]:] = dest_image
+            for i in range(0, dest_image.shape[0]):
+                for j in range(dest_image.shape[1], dest_image.shape[1]*2):
+                    if stitched[i, j] == 0:
+                        stitched[i, j] = dest_image[i, j - dest_image.shape[1]]
+        elif direction == 't2b':
+            # stitched[dest_image.shape[0]:, 0:dest_image.shape[1]] = dest_image
+            for i in range(dest_image.shape[0], dest_image.shape[0]*2):
+                for j in range(dest_image.shape[1]):
+                    if stitched[i, j] == 0:
+                        stitched[i, j] = dest_image[i - dest_image.shape[0], j]
+        elif direction == 'b2t':
+            # stitched[0:dest_image.shape[0], 0:dest_image.shape[1]] = dest_image
+            for i in range(0, dest_image.shape[0]):
+                for j in range(dest_image.shape[1]):
+                    if stitched[i, j] == 0:
+                        stitched[i, j] = dest_image[i, j]
+
     if params.TEST_BOOL:
         cv2.imshow('stitched', stitched)
         cv2.moveWindow('stitched', 100, 50)
@@ -189,6 +204,6 @@ def stitch(src_image, dest_image, d, task_name):
     # stitch image
     if h_mat is not None:
         image = warp(src_image, dest_image, h_mat,
-                     bm[0], bm[1], direction=d)
+                     bm[0], bm[1], d, task_name)
         cv2.imwrite('output/{}.png'.format(task_name), image)
     return image
