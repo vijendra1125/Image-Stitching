@@ -21,4 +21,4 @@ FLANN_INDEX_PARAMS = dict(algorithm=1, trees=5)
 FLANN_SEARCH_PARAMS = dict(checks=50)
 FLANN_K = 2
 # minimum number of feature matching in two image
-MIN_MATCH_COUNT = 10
+MIN_MATCH_COUNT = 4
