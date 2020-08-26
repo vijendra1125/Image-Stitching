@@ -15,13 +15,13 @@ def FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc):
     @brief: match descriptor vectors with a FLANN based matcher
     @args[in]:
         src_kp: keypoints from source image
-        dest_kp: keyppoints from destination image 
+        dest_kp: keyppoints from destination image
         src_desc: descriptor from source image
         dest_desc: descriptor from destination image
-    @args[out]: 
+    @args[out]:
         good_mathes: matches with descriptor distance below Lowe's ration
-        best_match: keypoints in soure  and destination image corresponding to 
-                    best matches descriptor  
+        best_match: keypoints in soure  and destination image corresponding to
+                    best matches descriptor
     '''
     # match descriptor vectors
     flann = cv2.FlannBasedMatcher(params.FLANN_INDEX_PARAMS,
@@ -86,7 +86,7 @@ def matches_visualization(src_image, dest_image, src_kp, dest_kp, good_matches,
 
 def get_homography_matrix(src_image, dest_image, task_name):
     '''
-    @brief: find homography matrix and keypoint in source and destination image 
+    @brief: find homography matrix and keypoint in source and destination image
             for best match
     @args[in]:
         src_image: source image
@@ -127,50 +127,37 @@ def get_homography_matrix(src_image, dest_image, task_name):
     return (h_mat, best_match)
 
 
-def find_homography(images, task_name):
+def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, dest_overlay=True):
     '''
     @brief:
     @args[in]:
     @args[out]:
     '''
-    homography = []
-    for i in range(len(images)):
-        for j in range(i+1, len(images)):
-            h_mat, bm = get_homography_matrix(images[i], images[j], task_name)
-            if h_mat is not None:
-                homography.append([i, j, h_mat, bm])
-    if len(homography) == 0:
-        return None
-    return homography
-
-
-def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction='hor', dest_overlay=True):
     # find the coordinate of best match keypoint from source image in the warped source image
     warped_src_bm_kp_t = np.dot(H, (src_bm_kp + (1,)))
     warped_src_bm_kp = [x/warped_src_bm_kp_t[2] for x in warped_src_bm_kp_t]
     # calculate offset based on the warping direction
     if direction == 'r2l':
         stitched_frame_size = (2 * src_image.shape[1], src_image.shape[0])
-        x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
-        y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
+        x_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
+        y_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
     elif direction == 'l2r':
         stitched_frame_size = (2*src_image.shape[1], src_image.shape[0])
-        x_offset = dest_bm_kp[0]+src_image.shape[0] - warped_src_bm_kp[0]
-        y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
+        x_offset = dest_bm_kp[1] + src_image.shape[1] - warped_src_bm_kp[1]
+        y_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
     elif direction == 't2b':
         stitched_frame_size = (src_image.shape[1], 2*src_image.shape[0])
-        x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
-        y_offset = dest_bm_kp[1]+src_image.shape[1] - warped_src_bm_kp[1]
+        x_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
+        y_offset = dest_bm_kp[0] + src_image.shape[0] - warped_src_bm_kp[0]
     # caculate new homography matrix with offset compensation
     T = np.array([[1, 0, x_offset],
                   [0, 1, y_offset],
                   [0, 0, 1]])
-    print(T)
-    print(H)
+    # print(T)
+    # print(H)
     H = np.dot(T, H)
-    print(H)
+    # print(H)
     # warp the source image
-    print(dest_image.shape, stitched_frame_size)
     stitched = cv2.warpPerspective(src_image, H, stitched_frame_size)
     # overlay destination image on warped output
     if dest_overlay:
@@ -179,13 +166,14 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction='hor', dest
         elif direction == 'l2r':
             stitched[0:dest_image.shape[0], dest_image.shape[1]:] = dest_image
         if direction == 't2b':
-            # stitched[dest_image.shape[0]:, 0:dest_image.shape[1]] = dest_image
-            for i in range(dest_image.shape[0], dest_image.shape[0]*2):
-                for j in range(dest_image.shape[1]):
-                    if stitched[i, j] == 0:
-                        stitched[i, j] = dest_image[i - dest_image.shape[0], j]
+            stitched[dest_image.shape[0]:, 0:dest_image.shape[1]] = dest_image
+            # for i in range(dest_image.shape[0], dest_image.shape[0]*2):
+            #     for j in range(dest_image.shape[1]):
+            #         if stitched[i, j] == 0:
+            #             stitched[i, j] = dest_image[i - dest_image.shape[0], j]
     # resize the final stitiched image and show
     stitched = cv2.resize(stitched, (504, 504))
+    print(stitched.shape)
     if params.TEST_BOOL:
         cv2.imshow('stitched', stitched)
         cv2.moveWindow('stitched', 100, 50)
