@@ -2,8 +2,8 @@ import os
 import cv2
 
 # params
-viz_bool = True
-down_factor = 6
+VIZ_BOOL = True
+DOWN_FACTOR = 6
 
 
 def stitch_images(images):
@@ -15,7 +15,7 @@ def stitch_images(images):
     status, stitched = stitcher.stitch(images)
     if status == 0:
         cv2.imwrite('stitched.png', stitched)
-        if viz_bool:
+        if VIZ_BOOL:
             cv2.imshow("Stitched", stitched)
             cv2.waitKey(0)
     else:
@@ -26,10 +26,10 @@ def main():
     images = []
     for image_name in os.listdir('data'):
         image = cv2.imread('data/{}'.format(image_name))
-        width = image.shape[1]//down_factor
-        height = image.shape[0]//down_factor
+        width = image.shape[1]//DOWN_FACTOR
+        height = image.shape[0]//DOWN_FACTOR
         image = cv2.resize(image, (width, height))
-        if viz_bool:
+        if VIZ_BOOL:
             cv2.imshow(image_name, image)
             cv2.waitKey(0)
         images.append(image)
