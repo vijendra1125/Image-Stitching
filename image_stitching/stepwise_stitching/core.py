@@ -53,7 +53,7 @@ def FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc):
 
 
 def matches_visualization(src_image, dest_image, src_kp, dest_kp, good_matches,
-                          h_mat, matches_mask):
+                          h_mat, matches_mask, task_name):
     '''
     @brief: visualize the good matches
     @args[in]:
@@ -80,11 +80,11 @@ def matches_visualization(src_image, dest_image, src_kp, dest_kp, good_matches,
     cv2.imshow('matching feature visualization', image3)
     cv2.moveWindow('matching feature visualization', 100, 50)
     cv2.waitKey(0)
-    cv2.imwrite('output/matching_{}.png'.format(params.TEST_ID), image3)
+    cv2.imwrite('output/matching_{}.png'.format(task_name), image3)
     cv2.destroyWindow('matching feature visualization')
 
 
-def get_homography_matrix(src_image, dest_image):
+def get_homography_matrix(src_image, dest_image, task_name):
     '''
     @brief: find homography matrix and keypoint in source and destination image 
             for best match
@@ -123,11 +123,11 @@ def get_homography_matrix(src_image, dest_image):
     if params.TEST_BOOL:
         matches_visualization(src_image.copy(), dest_image.copy(),
                               src_kp, dest_kp, good_matches,
-                              h_mat, matches_mask)
+                              h_mat, matches_mask, task_name)
     return (h_mat, best_match)
 
 
-def find_homography(images):
+def find_homography(images, task_name):
     '''
     @brief:
     @args[in]:
@@ -136,7 +136,7 @@ def find_homography(images):
     homography = []
     for i in range(len(images)):
         for j in range(i+1, len(images)):
-            h_mat, bm = get_homography_matrix(images[i], images[j])
+            h_mat, bm = get_homography_matrix(images[i], images[j], task_name)
             if h_mat is not None:
                 homography.append([i, j, h_mat, bm])
     if len(homography) == 0:
@@ -150,12 +150,15 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction='hor', dest
     warped_src_bm_kp = [x/warped_src_bm_kp_t[2] for x in warped_src_bm_kp_t]
     # calculate offset based on the warping direction
     if direction == 'r2l':
+        stitched_frame_size = (2 * src_image.shape[1], src_image.shape[0])
         x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
         y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
     elif direction == 'l2r':
+        stitched_frame_size = (2*src_image.shape[1], src_image.shape[0])
         x_offset = dest_bm_kp[0]+src_image.shape[0] - warped_src_bm_kp[0]
         y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
     elif direction == 't2b':
+        stitched_frame_size = (src_image.shape[1], 2*src_image.shape[0])
         x_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
         y_offset = dest_bm_kp[1]+src_image.shape[1] - warped_src_bm_kp[1]
     # caculate new homography matrix with offset compensation
@@ -167,7 +170,6 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction='hor', dest
     H = np.dot(T, H)
     print(H)
     # warp the source image
-    stitched_frame_size = tuple(2*x for x in src_image.shape)
     print(dest_image.shape, stitched_frame_size)
     stitched = cv2.warpPerspective(src_image, H, stitched_frame_size)
     # overlay destination image on warped output
