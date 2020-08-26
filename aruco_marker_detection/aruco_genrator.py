@@ -4,27 +4,27 @@ import matplotlib as mpl
 import os
 
 # parameters
-marker_count = 4
-aruco_dict = aruco.DICT_4X4_100
-marker_dim = 2048  # in pixel
-viz_bool = False
+MARKER_COUNT = 4
+ARUCO_DICT_TYPE = aruco.DICT_4X4_100
+MARKER_DIM = 2048  # in pixel
+VIZ_BOOL = False
 
 # init
-aruco_dict = aruco.Dictionary_get(aruco_dict)
+aruco_dict = aruco.Dictionary_get(ARUCO_DICT_TYPE)
 
 
 def generate_marker():
     '''
     @brief: Generate Aruco marker and save each marker as pdf and png in data folder
     '''
-    for i in range(1, marker_count+1):
-        img = aruco.drawMarker(aruco_dict, i, marker_dim)
+    for i in range(1, MARKER_COUNT+1):
+        img = aruco.drawMarker(aruco_dict, i, MARKER_DIM)
         plt.imshow(img, cmap=mpl.cm.gray, interpolation="nearest")
         plt.axis('off')
         plt.savefig("data/marker_{}.pdf".format(i),
                     papertype='a4', orientation='portrait', format='pdf')
         plt.savefig("data/marker_{}.png".format(i))
-        if viz_bool:
+        if VIZ_BOOL:
             plt.show()
 
 

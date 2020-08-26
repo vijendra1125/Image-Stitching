@@ -3,18 +3,18 @@ import cv2
 import matplotlib.pyplot as plt
 
 # parameter
-viz_bool = True
-marker_dict = aruco.DICT_4X4_100
+VIZ_BOOL = True
+MARKER_DICT_TYPE = aruco.DICT_4X4_100
 
 # init
 cam = cv2.VideoCapture(0)
-aruco_dict = aruco.Dictionary_get(marker_dict)
+aruco_dict = aruco.Dictionary_get(MARKER_DICT_TYPE)
 parameters = aruco.DetectorParameters_create()
 
 
 def detect_image(image, cam_bool=False):
     '''
-    @brief: Detect marker in a given image and visualize if viz_bool is True
+    @brief: Detect marker in a given image and visualize if VIZ_BOOL is True
     @arg[in]: 
         image: RGB image
         cam_bool: True if image is passed from camera feed
@@ -25,7 +25,7 @@ def detect_image(image, cam_bool=False):
     corners, ids, rejectedImgPoints = aruco.detectMarkers(
         image_gray, aruco_dict, parameters=parameters)
     # visualization
-    if viz_bool:
+    if VIZ_BOOL:
         for i in range(len(corners)):
             print('ID:', ids[i], '\ncorners:\n', corners[i])
         frame_markers = aruco.drawDetectedMarkers(
@@ -39,7 +39,7 @@ def detect_image(image, cam_bool=False):
 
 def detect_cam():
     '''
-    @brief: Detect marker in camera feed and visualize if viz_bool is True
+    @brief: Detect marker in camera feed and visualize if VIZ_BOOL is True
     '''
     while True:
         # marker detection
