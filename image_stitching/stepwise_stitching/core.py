@@ -33,7 +33,7 @@ def FLANN_matcher(src_kp, dest_kp, src_desc, dest_desc):
     # best matches descriptor
     good_matches = []
     best_match = (0, 0)
-    min_distance = 1
+    min_distance = matches[0][0].distance
     for m, n in matches:
         if m.distance < 0.7*n.distance:
             good_matches.append(m)
@@ -124,6 +124,7 @@ def get_homography_matrix(src_image, dest_image, task_name):
         matches_visualization(src_image.copy(), dest_image.copy(),
                               src_kp, dest_kp, good_matches,
                               h_mat, matches_mask, task_name)
+    print(best_match)
     return (h_mat, best_match)
 
 
@@ -143,8 +144,8 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, dest_overl
         y_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
     elif direction == 'l2r':
         stitched_frame_size = (2*src_image.shape[1], src_image.shape[0])
-        x_offset = dest_bm_kp[1] + src_image.shape[1] - warped_src_bm_kp[1]
-        y_offset = dest_bm_kp[0] - warped_src_bm_kp[0]
+        x_offset = dest_bm_kp[0] + src_image.shape[0] - warped_src_bm_kp[0]
+        y_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
     elif direction == 't2b':
         stitched_frame_size = (src_image.shape[1], 2*src_image.shape[0])
         x_offset = dest_bm_kp[1] - warped_src_bm_kp[1]
@@ -180,3 +181,14 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, dest_overl
         cv2.waitKey(0)
         cv2.destroyWindow('stitched')
     return stitched
+
+
+def stitch(src_image, dest_image, d, task_name):
+    # feature finding and image matching
+    h_mat, bm = get_homography_matrix(src_image, dest_image, task_name)
+    # stitch image
+    if h_mat is not None:
+        image = warp(src_image, dest_image, h_mat,
+                     bm[0], bm[1], direction=d)
+        cv2.imwrite('output/{}.png'.format(task_name), image)
+    return image
