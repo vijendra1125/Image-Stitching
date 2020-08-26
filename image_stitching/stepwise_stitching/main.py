@@ -1,8 +1,10 @@
+#
+# Created on Thu Aug 24 2020
+# Author: Vijendra Singh
+# Licence: MIT
+# Brief:
+#
 
-'''
-@brief: 
-@author: Vijendra Singh
-'''
 
 import os
 import cv2

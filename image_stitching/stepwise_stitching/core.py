@@ -1,7 +1,9 @@
-'''
-@brief:
-@author: Vijendra Singh
-'''
+#
+# Created on Thu Aug 24 2020
+# Author: Vijendra Singh
+# Licence: MIT
+# Brief:
+#
 
 import cv2
 import numpy as np

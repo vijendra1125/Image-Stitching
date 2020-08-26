@@ -1,7 +1,9 @@
-'''
-@brief: Paramters
-@author: Vijendra Singh
-'''
+#
+# Created on Thu Aug 24 2020
+# Author: Vijendra Singh
+# Licence: MIT
+# Brief:
+#
 
 # if true, enable additional print and visulaization
 TEST_BOOL = True
