@@ -5,12 +5,9 @@
 
 # if true, enable additional print and visulaization
 TEST_BOOL = True
-TEST_ID = 'l2r'
 # factor by image should be downscaled before use
 DOWN_FACTOR = 6
-# row and column of images in complete view
-VIEW_ROWS = 2
-VIEW_COLS = 2
+
 
 # ---Feature matching---
 # feature matching algorithm, choose between 'sift' and 'surf'
