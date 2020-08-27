@@ -28,11 +28,11 @@ def main():
     # image_32 = core.stitch(images[3], images[2], 'r2l', 'image_32')
 
     # options to stitch left half
-    # image_02 = core.stitch(images[0], images[2], 't2b', 'image_02')
-    image_20 = core.stitch(images[2], images[0], 'b2t', 'image_20')
+    image_02 = core.stitch(images[0], images[2], 't2b', 'image_02')
+    # image_20 = core.stitch(images[2], images[0], 'b2t', 'image_20')
     # options to stitch right half
-    # image_13 = core.stitch(images[1], images[3], 't2b', 'image_13')
-    image_31 = core.stitch(images[3], images[1], 'b2t', 'image_31')
+    image_13 = core.stitch(images[1], images[3], 't2b', 'image_13')
+    # image_31 = core.stitch(images[3], images[1], 'b2t', 'image_31')
 
     # options to stich upper and lower half
     # image_01_23 = core.stitch(image_01, image_23, 't2b', 'full_image_01_23')
@@ -41,9 +41,9 @@ def main():
     # image_32_10 = core.stitch(image_32, image_10, 'b2t', 'full_image_32_10')
 
     # options to stitch left half and right half
-    # image_02_13 = core.stitch(image_02, image_13, 'l2r', 'full_image_02_13')
+    image_02_13 = core.stitch(image_02, image_13, 'l2r', 'full_image_02_13')
     # image_13_02 = core.stitch(image_13, image_02, 'r2l', 'full_image_13_02')
-    image_20_31 = core.stitch(image_20, image_31, 'l2r', 'full_image_20_31')
+    # image_20_31 = core.stitch(image_20, image_31, 'l2r', 'full_image_20_31')
     # image_31_20 = core.stitch(image_31, image_20, 'r2l', 'full_image_31_20')
 
 

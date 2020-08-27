@@ -187,12 +187,14 @@ def warp(src_image, dest_image,  H, src_bm_kp, dest_bm_kp, direction, task_name)
                 for j in range(dest_image.shape[1]):
                     if stitched[i, j] == 0:
                         stitched[i, j] = dest_image[i - dest_image.shape[0], j]
+            stitched = cv2.resize(stitched, dsize=(0, 0), fx=1/2, fy=1/2)
         elif direction == 'b2t':
             # stitched[0:dest_image.shape[0], 0:dest_image.shape[1]] = dest_image
             for i in range(0, dest_image.shape[0]):
                 for j in range(dest_image.shape[1]):
                     if stitched[i, j] == 0:
                         stitched[i, j] = dest_image[i, j]
+            stitched = cv2.resize(stitched, dsize=(0, 0), fx=1/2, fy=1/2)
 
     if params.TEST_BOOL:
         cv2.imshow('stitched', stitched)

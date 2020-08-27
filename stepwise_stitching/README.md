@@ -16,5 +16,10 @@ Below are the main steps involved in the stitching of images:
 * Python 3.7.4
 * OpenCV 3.4.2.16
 
+## Demo
+<p align="center">
+<img src="./media/stepwise_stitching.gif" alt="drawing" width="512"/>
+</p>
+
 ## Good Links
 [TODO]
