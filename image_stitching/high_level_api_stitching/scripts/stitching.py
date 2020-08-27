@@ -4,6 +4,8 @@ import cv2
 # params
 VIZ_BOOL = True
 SCALE_FACTOR = 1/6
+DATA_DIR = '../data'
+OUTPUT_DIR = '../output'
 
 
 def stitch_images(images):
@@ -14,7 +16,8 @@ def stitch_images(images):
     stitcher = cv2.Stitcher_create()
     status, stitched = stitcher.stitch(images)
     if status == 0:
-        cv2.imwrite('output/stitched.png', stitched)
+        out_path = os.path.join(OUTPUT_DIR, 'stitched.png')
+        cv2.imwrite(out_path, stitched)
         if VIZ_BOOL:
             cv2.imshow("Stitched", stitched)
             cv2.waitKey(0)
@@ -24,8 +27,8 @@ def stitch_images(images):
 
 def main():
     images = []
-    for image_name in os.listdir('data'):
-        image = cv2.imread('data/{}'.format(image_name))
+    for image_name in os.listdir(DATA_DIR):
+        image = cv2.imread(os.path.join(DATA_DIR, image_name))
         image = cv2.resize(image, dsize=(0, 0),
                            fx=SCALE_FACTOR, fy=SCALE_FACTOR)
         if VIZ_BOOL:

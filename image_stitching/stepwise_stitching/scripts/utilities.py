@@ -11,7 +11,7 @@ import cv2
 import parameters as params
 
 
-def read_images(dir_name='data'):
+def read_images(dir_name=params.DATA_DIR):
     '''
     @brief: read images and store it along with unique ID representing its position
     @args[in]: directory containing images

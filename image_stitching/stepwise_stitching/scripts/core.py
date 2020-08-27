@@ -8,6 +8,7 @@
 import cv2
 import numpy as np
 import sys
+import os
 
 import parameters as params
 
@@ -66,7 +67,8 @@ def matches_visualization(src_image, dest_image, src_kp, dest_kp, good_matches,
     cv2.imshow('matching feature visualization', image3)
     cv2.moveWindow('matching feature visualization', 100, 50)
     cv2.waitKey(0)
-    cv2.imwrite('output/matching_{}.png'.format(task_name), image3)
+    out_path = os.path.join(params.OUTPUT_DIR, 'matching_'+task_name+'.png')
+    cv2.imwrite(out_path, image3)
     cv2.destroyWindow('matching feature visualization')
 
 
@@ -207,5 +209,6 @@ def stitch(src_image, dest_image, d, task_name):
     if h_mat is not None:
         image = warp(src_image, dest_image, h_mat,
                      bm[0], bm[1], d, task_name)
-        cv2.imwrite('output/{}.png'.format(task_name), image)
+        out_path = os.path.join(params.OUTPUT_DIR, task_name+'.png')
+        cv2.imwrite(out_path, image)
     return image

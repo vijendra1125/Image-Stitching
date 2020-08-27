@@ -9,6 +9,10 @@
 TEST_BOOL = True
 # factor by image should be downscaled before use
 DOWN_FACTOR = 6
+# directory to read data from
+DATA_DIR = '../data'
+# directory to write ouput in
+OUTPUT_DIR = '../output'
 
 
 # ---Feature matching---
